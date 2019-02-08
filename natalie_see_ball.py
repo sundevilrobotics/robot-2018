@@ -1,58 +1,48 @@
-#!/usr/bin/python3
-
-import argparse
+from Class.ShapeIdentifier import ShapeIdentifier
+import imutils
 import cv2
 
-# fetching the arguments and save in dictionary
-ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--image", required = True, help = "Enter path to the image")
-args = vars(ap.parse_args())
+cap = cv2.VideoCapture(0)
 
-# load and convert image into numpy array
-image = cv2.imread(args["image"])
+while (1):
 
-# come up with a way for it to test if it is a tennis ball 
-# grab a region and show in cv2 window
-middle = image[100:150, 100:150]
+    # Take each frame
+    _, frame = cap.read()
+    sd = ShapeIdentifier()
 
-cv2.imshow("Middle", middle)
-cv2.waitKey(0)
-# maybe look for a bunch of yellow pixels in the middle or something
-yellow_pixels = 0
+    resized = imutils.resize(frame, width=300, height=300)
 
-main_color_middle = "white"
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    thresh = cv2.threshold(blurred, 90, 150, cv2.THRESH_BINARY)[1]
 
-def check_color(x,y):
-	color = "black"
-	(b,g,r) = image[x,y]
-	if g > 200 and r > 200 and b < 100:
-		color = "yellow"
-	elif g > 70 and r > 150 and b < 100:
-		color = "orange"
-	return color
+    cv2.imshow("thresh", thresh)
+    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
 
-def check_region(x1, x2, y1, y2, color):
-	total_pixels = 0
-	sought_color_pixels = 0
+    # currently able to find circle, next steps would be to match
+    # if circle and circle color is inRange of hsv green values.
+    # also make circle drawing stay throughout program by making
+    # xy of shape a global var outside of the while
+    # update that var every x amount of frames to stay on course
 
-	for i in range(x1, x2):
-		for j in range(y1, y2):
-			total_pixels += 1
-			if check_color(i,j) == color:
-				sought_color_pixels += 1
+    for c in cnts:
+        shape = sd.detect(c)
+        M = cv2.moments(c)
+        if M["m00"] == 0:
+            break
 
-	percent_sought_color = (sought_color_pixels / total_pixels)*100
-	return percent_sought_color
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
 
-percent_yellow = check_region(100,150,100,150, "yellow")
-percent_orange = check_region(100,150,100,150, "orange")
+        c = c.astype("float")
+        c = c.astype("int")
+        cv2.drawContours(resized, [c], -1, (0, 255, 0), 2)
+        cv2.putText(image, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX,
+        0.5, (255, 255, 255), 2)
 
-print("Percentage of yellow pixels: ", percent_yellow, " %")
-print("Percentage of orange pixels: ", percent_orange, " %")
+    cv2.imshow("res", resized)
+    cv2.waitKey(10)
 
-if percent_yellow > 80:
-	print("That is a tennis ball")	
-elif percent_orange > 80:
-	print("That is a basketball")
-else:
-	print("I don't know what kind of ball that is")
+cv2.destroyAllWindows()
