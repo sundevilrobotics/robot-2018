@@ -39,7 +39,7 @@ while (1):
         c = c.astype("float")
         c = c.astype("int")
         cv2.drawContours(resized, [c], -1, (0, 255, 0), 2)
-        cv2.putText(image, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX,
+        cv2.putText(resized, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX,
         0.5, (255, 255, 255), 2)
 
     cv2.imshow("res", resized)
