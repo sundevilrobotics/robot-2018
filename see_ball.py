@@ -1,58 +1,87 @@
 #!/usr/bin/python3
 
 import argparse
+import numpy as np 
 import cv2
+import math
 
-# fetching the arguments and save in dictionary
+red = (0,0,255)
+
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", required = True, help = "Enter path to the image")
 args = vars(ap.parse_args())
 
-# load and convert image into numpy array
 image = cv2.imread(args["image"])
 
-# come up with a way for it to test if it is a tennis ball 
-# grab a region and show in cv2 window
-middle = image[100:150, 100:150]
+def deg2rad(deg):
+	rad = deg * (math.pi / 180)
+	return rad
 
-cv2.imshow("Middle", middle)
-cv2.waitKey(0)
-# maybe look for a bunch of yellow pixels in the middle or something
-yellow_pixels = 0
+def make_circle(radius, center_x, center_y):
+	for theta in range(0, 359):
+		for r in range(0, radius, 10):
+			x1 = center_x + r*(math.cos(deg2rad(theta)))
+			y1 = center_y + r*(math.sin(deg2rad(theta)))
+			x2 = center_x + r*(math.cos(deg2rad(theta + 1)))
+			y2 = center_y + r*(math.sin(deg2rad(theta + 1)))
 
-main_color_middle = "white"
+			cv2.line(image, (int(x1),int(y1)), (int(x2),int(y2)), red, 3)
 
-def check_color(x,y):
-	color = "black"
+def check_yellow(x,y):
 	(b,g,r) = image[x,y]
-	if g > 200 and r > 200 and b < 100:
-		color = "yellow"
-	elif g > 70 and r > 150 and b < 100:
-		color = "orange"
-	return color
+	#print("b: ", b, "g: ", g, "r: ", r)
+	if b > 10 and b < 50:
+		if g > 150 and g < 255:
+			if r > 100 and r < 255:
+				return True
+	else:
+		return False
 
-def check_region(x1, x2, y1, y2, color):
+#This can be used to check the color inside each circle 
+def yellow_circle_check(radius, center_x, center_y):
+	yellow_pixels = 0
 	total_pixels = 0
-	sought_color_pixels = 0
 
-	for i in range(x1, x2):
-		for j in range(y1, y2):
+	for theta in range(0, 360):
+		for r in range(0, radius):
+			xpixel = center_x + r*(math.cos(deg2rad(theta)))
+			ypixel = center_y + r*(math.sin(deg2rad(theta)))
 			total_pixels += 1
-			if check_color(i,j) == color:
-				sought_color_pixels += 1
+			#(b,g,r) = image[int(xpixel), int(ypixel)]
+			#print("b: ", b, "g: ", g, "r: ", r)
+			if check_yellow(int(xpixel), int(ypixel)) == True:
+				yellow_pixels += 1
+	
+	percent_yellow = (yellow_pixels / total_pixels)*100
+	print("Percent yellow pixels: ", percent_yellow)
+	if percent_yellow > 80:
+		return True
+	else:
+		return False
 
-	percent_sought_color = (sought_color_pixels / total_pixels)*100
-	return percent_sought_color
+#convert image to greyscale
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-percent_yellow = check_region(100,150,100,150, "yellow")
-percent_orange = check_region(100,150,100,150, "orange")
+#implement gaussian blur
+blurred = cv2.GaussianBlur(gray, (7,7), 0)
 
-print("Percentage of yellow pixels: ", percent_yellow, " %")
-print("Percentage of orange pixels: ", percent_orange, " %")
+#canny edge detection
+canny = cv2.Canny(blurred, 30, 150)
 
-if percent_yellow > 80:
-	print("That is a tennis ball")	
-elif percent_orange > 80:
-	print("That is a basketball")
-else:
-	print("I don't know what kind of ball that is")
+#find the contours, count them and mark them
+(cnts, _) = cv2.findContours(canny.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+#create copy of the image
+balls = image.copy()
+
+#draw the contours in the color image copy
+cv2.drawContours(balls, cnts, -1, (255,0,0), 2)
+cv2.imshow("Contours", balls)
+cv2.waitKey(0)
+
+yellow_circle_check(120, 490, 160)
+
+make_circle(120, 490, 160)		 
+
+cv2.imshow("image", image)
+cv2.waitKey(0)

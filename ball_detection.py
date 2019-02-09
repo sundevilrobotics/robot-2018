@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 import numpy as np
 import cv2
@@ -62,7 +62,7 @@ def get_contour_center(contour):
     return cx, cy
 
 def main():
-    image_name = "images/tennisball05.jpg"
+    image_name = "/test_images/tennis_ball.jpeg"
     yellowLower =(30, 150, 100)
     yellowUpper = (50, 255, 255)
     rgb_image = read_rgb_image(image_name, True)
