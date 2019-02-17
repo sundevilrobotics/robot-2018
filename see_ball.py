@@ -27,6 +27,15 @@ def make_circle(radius, center_x, center_y):
 
 			cv2.line(image, (int(x1),int(y1)), (int(x2),int(y2)), red, 3)
 
+def get_contour_center(c):
+	M = cv2.moments(c)
+	Cx = -1
+	Cy = -1
+	if (M['m00'] != 0):
+		Cx = int(M['m10']/M['m00'])
+		Cy = int(M['m01']/M['m00'])
+	return Cx, Cy
+
 def check_yellow(x,y):
 	(b,g,r) = image[x,y]
 	#print("b: ", b, "g: ", g, "r: ", r)
@@ -72,16 +81,18 @@ canny = cv2.Canny(blurred, 30, 150)
 (cnts, _) = cv2.findContours(canny.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 #create copy of the image
-balls = image.copy()
+image_copy = image.copy()
 
 #draw the contours in the color image copy
-cv2.drawContours(balls, cnts, -1, (255,0,0), 2)
-cv2.imshow("Contours", balls)
+cv2.drawContours(image_copy, cnts, -1, (255,0,0), 2)
+cv2.imshow("Contours", image_copy)
 cv2.waitKey(0)
 
-yellow_circle_check(120, 490, 160)
+#mark the central point of each contour
+for c in cnts:
+	cx, cy = get_contour_center(c)
+	cv2.circle(image_copy, (cx, cy), 5, (0,0,255), -1)
 
-make_circle(120, 490, 160)		 
-
-cv2.imshow("image", image)
+	 
+cv2.imshow("contour centers", image_copy)
 cv2.waitKey(0)
