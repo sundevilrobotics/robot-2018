@@ -24,10 +24,6 @@ while (1):
 
 #convert the image into HSV color space
 
-	cv2.imshow("Original", frame)
-	cv2.waitKey(1)
-
-
 	hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 	cv2.imshow("hsv image", hsv)
 	cv2.waitKey(1)
@@ -39,14 +35,13 @@ while (1):
 #define a mask using the lower and upper bounds
 	mask = cv2.inRange(hsv, yellowLower, yellowUpper)
 
-	cv2.imshow("mask", mask)
-	cv2.waitKey(1)
-
+#generate contour lines using the now black and white picture
 	(contours, _) = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
 #create copy of the color image
 	image_copy = frame.copy()
 
+#draw the previously generated contour lines on the color image
 	cv2.drawContours(image_copy, contours, -1, (255,0,0), 2)
 	cv2.imshow("Contours", image_copy)
 	cv2.waitKey(1)

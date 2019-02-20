@@ -84,7 +84,7 @@ canny = cv2.Canny(blurred, 30, 150)
 image_copy = image.copy()
 
 #draw the contours in the color image copy
-cv2.drawContours(image_copy, cnts, -1, (255,0,0), 2)
+cv2.drawContours(image_copy, cnts, -1, (0,0,255), 2)
 cv2.imshow("Contours", image_copy)
 cv2.waitKey(0)
 
